@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+plots/
+training/
+model/*.pt
+*.pt
+.DS_Store

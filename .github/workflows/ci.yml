@@ -1,0 +1,28 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+      - name: Compile all sources
+        run: python -m py_compile dataset.py generate.py utils.py wgan_gp.py model/generator.py model/discriminator.py
+      - name: Generator and critic build and run
+        run: |
+          python - <<'PY'
+          import torch
+          from model.generator import Generator
+          from model.discriminator import Discriminator
+          g, d = Generator(100, 3, 16), Discriminator(3, 16)
+          x = g(torch.randn(2, 100))
+          print("generator output", tuple(x.shape), "critic output", tuple(d(x).shape))
+          PY

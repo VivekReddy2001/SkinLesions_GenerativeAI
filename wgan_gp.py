@@ -127,7 +127,7 @@ for e in range(epochs):
         while j < disc_steps and i < len(train_loader):
             j += 1
             i += 1
-            images= train_iterator.next()
+            images = next(train_iterator)
             images = images.to(device)
             common_batch_size = min(batch_size, images.shape[0])
             disc_optimizer.zero_grad()

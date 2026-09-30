@@ -1,10 +1,14 @@
 # 🧠 SkinAid: A GAN-based Automatic Skin Lesion Monitoring Framework for IoMT
 
+[![Paper](https://img.shields.io/badge/IEEE%20OCIT-2021-00629B)](https://ieeexplore.ieee.org/document/9719383)
+[![DOI](https://img.shields.io/badge/DOI-10.1109%2FOCIT53463.2021.00048-blue)](https://doi.org/10.1109/OCIT53463.2021.00048)
+![PyTorch](https://img.shields.io/badge/PyTorch-WGAN--GP-EE4C2C)
+
 This repository contains the official implementation of our paper:
 
 > **SkinAid: A GAN-based Automatic Skin Lesion Monitoring Method for IoMT Frameworks**  
 > *2021 19th OITS International Conference on Information Technology (OCIT)*  
-> 📄 [View Paper on IEEE Xplore](https://ieeexplore.ieee.org/document/9719383)
+> 📄 [View Paper on IEEE Xplore](https://ieeexplore.ieee.org/document/9719383) · DOI [10.1109/OCIT53463.2021.00048](https://doi.org/10.1109/OCIT53463.2021.00048)
 
 ---
 
@@ -30,7 +34,9 @@ It achieves an overall accuracy of **92.2%**, with real-time deployment on Andro
 - [Synthetic Image Generation (W-GAN-GP)](#-synthetic-image-generation-w-gan-gp)
 - [Model Training & Results](#-model-training--results)
 - [Mobile App Prototype](#-mobile-app-prototype)
-- [Contributions](#-contributions)
+- [Code in this repository](#-code-in-this-repository)
+- [Follow-up work](#-follow-up-work)
+- [Contributions](#-key-contributions)
 - [Citation](#-citation)
 
 ---
@@ -58,7 +64,7 @@ We use the **HAM10000** (“Human Against Machine with 10,000 training images”
 | NV | Melanocytic Nevi |
 | VASC | Vascular Lesions |
 
-📦 Dataset source: [Kaggle - Skin Cancer MNIST: HAM10000](https://www.kaggle.com/datasets/kmader/skin-cancer-mnist-ham10000)
+📦 Dataset sources: [Harvard Dataverse (original release)](https://doi.org/10.7910/DVN/DBW86T) · [ISIC 2018 Challenge, Task 3](https://challenge.isic-archive.com/data/#2018) · [Kaggle mirror](https://www.kaggle.com/datasets/kmader/skin-cancer-mnist-ham10000)
 
 ---
 
@@ -112,7 +118,7 @@ We designed a lightweight **Android application** for edge-based inference, enab
 ---
 
 ## 🧩 Key Contributions
-✔️ Implemented advanced **preprocessing** pipeline for feature enhancement  x
+✔️ Implemented advanced **preprocessing** pipeline for feature enhancement  
 ✔️ Used **WGAN-GP** for data augmentation to overcome dataset imbalance  
 ✔️ Applied **transfer learning** with modern CNN architectures  
 ✔️ Achieved **92.2% accuracy** using DenseNet-121  
@@ -121,8 +127,44 @@ We designed a lightweight **Android application** for edge-based inference, enab
 
 ---
 
-## 🧠 Architecture Diagram
-<img src="Images/design_overview.png" width="1000"/>
+## 💻 Code in this repository
+
+This is the WGAN-GP code used for the paper's synthetic-data stage, kept as it was used in 2021.
+
+| File | Purpose |
+|---|---|
+| [`wgan_gp.py`](wgan_gp.py) | WGAN-GP training loop (5 critic steps per generator step, λ = 10, Adam β = (0, 0.9), 128×128 RGB); trains one generator per lesion class from a folder of that class's images |
+| [`model/generator.py`](model/generator.py), [`model/discriminator.py`](model/discriminator.py) | DCGAN-style generator and critic for 64×64 or 128×128 output |
+| [`utils.py`](utils.py) | Gradient penalty and loss / Wasserstein-distance plots |
+| [`dataset.py`](dataset.py) | Minimal image-folder dataset |
+| [`generate.py`](generate.py) | Sample synthetic images from a trained generator checkpoint |
+| [`synthetic_samples/`](synthetic_samples) | Example generator output |
+
+**Running it.** Set `DATA_FOLDER` (one lesion class per run) at the top of
+`wgan_gp.py`, and the checkpoint and output paths in `generate.py`, then run
+from the directory above the repository so the package-relative imports
+resolve:
+
+```bash
+pip install -r requirements.txt
+python -m SkinLesions_GenerativeAI.wgan_gp
+python -m SkinLesions_GenerativeAI.generate
+```
+
+---
+
+## 🔬 Follow-up work
+
+[**LesionBench**](https://github.com/VivekReddy2001/lesionbench) revisits
+this paper's question, whether synthetic images help imbalanced
+dermoscopy classification, as a reproducible benchmark. It uses the
+official ISIC 2018 release of HAM10000 and **lesion-level train/test
+splits**. HAM10000 contains several photographs of the same lesion, and
+with an image-level split about a third of test images have a sibling
+photo in the training set. The benchmark compares GAN augmentation
+against class weighting, focal loss, oversampling and classic
+augmentation, with balanced accuracy, macro-F1 and calibration, averaged
+over seeds.
 
 ---
 
