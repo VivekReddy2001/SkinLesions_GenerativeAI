@@ -3,6 +3,7 @@ __pycache__/
 .ipynb_checkpoints/
 plots/
 training/
-model/*.pt
+checkpoints/
+synthetic/
 *.pt
 .DS_Store

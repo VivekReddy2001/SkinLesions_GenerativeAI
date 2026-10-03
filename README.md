@@ -129,27 +129,29 @@ We designed a lightweight **Android application** for edge-based inference, enab
 
 ## 💻 Code in this repository
 
-This is the WGAN-GP code used for the paper's synthetic-data stage, kept as it was used in 2021.
+This is the WGAN-GP code used for the paper's synthetic-data stage. The training procedure is as it was in 2021; the scripts now take command-line arguments and run on current PyTorch.
 
 | File | Purpose |
 |---|---|
 | [`wgan_gp.py`](wgan_gp.py) | WGAN-GP training loop (5 critic steps per generator step, λ = 10, Adam β = (0, 0.9), 128×128 RGB); trains one generator per lesion class from a folder of that class's images |
-| [`model/generator.py`](model/generator.py), [`model/discriminator.py`](model/discriminator.py) | DCGAN-style generator and critic for 64×64 or 128×128 output |
+| [`model/generator.py`](model/generator.py), [`model/discriminator.py`](model/discriminator.py) | DCGAN-style generator, and a convolutional critic that scores a 5×5 grid of patches per 128×128 image |
 | [`utils.py`](utils.py) | Gradient penalty and loss / Wasserstein-distance plots |
-| [`dataset.py`](dataset.py) | Minimal image-folder dataset |
+| [`dataset.py`](dataset.py) | Image-folder dataset (skips non-image files, always yields RGB) |
 | [`generate.py`](generate.py) | Sample synthetic images from a trained generator checkpoint |
 | [`synthetic_samples/`](synthetic_samples) | Example generator output |
 
-**Running it.** Set `DATA_FOLDER` (one lesion class per run) at the top of
-`wgan_gp.py`, and the checkpoint and output paths in `generate.py`, then run
-from the directory above the repository so the package-relative imports
-resolve:
+**Running it.** One generator is trained per lesion class, from a folder of that class's images:
 
 ```bash
 pip install -r requirements.txt
-python -m SkinLesions_GenerativeAI.wgan_gp
-python -m SkinLesions_GenerativeAI.generate
+python wgan_gp.py --data data/DF --epochs 10000          # checkpoints/, training/ samples, plots/ losses
+python generate.py --checkpoint checkpoints/generator_best.pt --out synthetic/DF --n 500
 ```
+
+`python wgan_gp.py --help` lists every option. The training procedure itself (critic schedule,
+gradient penalty, optimiser settings) is unchanged from the paper. CI trains for two epochs on a
+handful of random images and generates from the result, so the scripts are known to run on current
+PyTorch.
 
 ---
 

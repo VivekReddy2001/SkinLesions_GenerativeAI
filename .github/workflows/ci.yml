@@ -13,7 +13,9 @@ jobs:
       - uses: actions/setup-python@v7
         with:
           python-version: "3.11"
-      - run: pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+      - run: |
+          pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
+          pip install numpy matplotlib Pillow
       - name: Compile all sources
         run: python -m py_compile dataset.py generate.py utils.py wgan_gp.py model/generator.py model/discriminator.py
       - name: Generator and critic build and run
@@ -26,3 +28,16 @@ jobs:
           x = g(torch.randn(2, 100))
           print("generator output", tuple(x.shape), "critic output", tuple(d(x).shape))
           PY
+      - name: Train for two epochs on tiny images, then generate
+        run: |
+          python - <<'PY'
+          import os
+          import numpy as np
+          from PIL import Image
+          os.makedirs("ci-data", exist_ok=True)
+          for i in range(6):
+              Image.fromarray((np.random.rand(90, 120, 3) * 255).astype("uint8")).save(f"ci-data/img{i}.png")
+          PY
+          python wgan_gp.py --data ci-data --epochs 2 --batch-size 2 --sample-every 1
+          python generate.py --checkpoint checkpoints/generator_best.pt --out ci-synth --n 3
+          test "$(ls ci-synth | wc -l)" -eq 3
