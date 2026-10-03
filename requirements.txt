@@ -1,5 +1,5 @@
-torch>=1.9
-torchvision>=0.10
+torch>=2.0
+torchvision>=0.15
 numpy
 matplotlib
 Pillow
