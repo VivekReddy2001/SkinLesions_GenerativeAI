@@ -69,7 +69,12 @@ We use the **HAM10000** (“Human Against Machine with 10,000 training images”
 ---
 
 ## ⚙️ Preprocessing & ROI Extraction
-To ensure high-quality training data, we extracted the **region-of-interest (ROI)** of skin lesions using segmentation masks and morphological transformations.
+Every image goes through the same pipeline (paper §III-B):
+
+1. **Contour detection and cropping:** grayscale, threshold, `cv2.findContours`, then crop to the lesion's bounding region (ROI), dropping the surrounding skin and background.
+2. **Global contrast normalisation (GCN):** subtract the image mean and divide by its standard deviation.
+3. **Morphological transformation:** dilation and erosion together, to reconnect fragmented lesion pixels and suppress noise.
+4. **Resize** to 224 × 224 × 3.
 
 ### (a) ROI Extraction Example:
 <img src="Images/roi.png" width="1000"/>
@@ -91,14 +96,35 @@ We used **Wasserstein-GAN with Gradient Penalty (WGAN-GP)** to synthetically aug
 ---
 
 ## 🧠 Model Training & Results
-To classify the skin lesions, we fine-tuned multiple CNN architectures using **transfer learning**:
-- ResNet-50  
-- EfficientNet-B0  
-- DenseNet-121 *(best performance)*  
-- MobileNet-V2  
+A per-class WGAN-GP generated **27,055** synthetic images, bringing every minority class close to the
+size of the largest (melanocytic nevi, 5,822 training images); the augmented training set has
+35,967 images. Six ImageNet-pretrained CNNs were then fine-tuned with transfer learning and
+compared on the original data, the augmented data, and the augmented *and* preprocessed data
+(paper Table IV, accuracy in %):
 
-Each model was trained on the augmented dataset (original + synthetic samples).  
-DenseNet-121 achieved **92.2% test accuracy** with improved generalization and balanced class distribution.
+| Classifier | Original dataset | Augmented, no preprocessing | Augmented + preprocessed |
+|---|---:|---:|---:|
+| VGG-16 | 63.3 | 70.5 | 83.7 |
+| ResNet-50 | 68.1 | 71.9 | 87.3 |
+| ResNet-101 | 68.7 | 71.3 | 87.8 |
+| MobileNet-v2 | 66.4 | 69.8 | 89.6 |
+| Inception-v3 | 69.2 | 73.1 | 90.8 |
+| **DenseNet-121** | 70.4 | 73.0 | **92.2** |
+
+Per-class results for DenseNet-121 (paper Table V):
+
+| Class | Precision | Recall | F1 |
+|---|---:|---:|---:|
+| Actinic keratosis | 0.75 | 0.73 | 0.739 |
+| Basal cell carcinoma | 0.75 | 0.80 | 0.774 |
+| Melanoma | 0.85 | 0.73 | 0.785 |
+| Dermatofibroma | 0.85 | 0.75 | 0.796 |
+| Melanocytic nevi | 0.94 | 0.96 | 0.949 |
+| Vascular lesions | 0.83 | 0.76 | 0.792 |
+| Benign keratosis | 0.78 | 0.71 | 0.743 |
+
+The trained PyTorch model was exported through **ONNX** to a TensorFlow `.pb` graph for the
+Android app.
 
 <img src="Images/cnn_acc_comparision.png" width="700"/>
 
@@ -110,17 +136,17 @@ We designed a lightweight **Android application** for edge-based inference, enab
 <img src="Images/mobile_app.png" width="600"/>
 
 **Features:**
-- Real-time lesion capture using a smartphone camera  
-- On-device CNN inference (no internet required)  
-- Displays lesion type, confidence score, and risk level  
-- Ideal for rural healthcare centers and tele-dermatology  
+- Lesion capture with the smartphone camera
+- On-device classification into the seven classes, with no internet connection required (tested on 4 GB RAM; minimum 2.5 GB RAM, 150 MB storage, 8 MP camera)
+- A symptom check and a preliminary analysis of the lesion, for health workers and dermatologists
+- Aimed at rural health centres and tele-dermatology
 
 ---
 
 ## 🧩 Key Contributions
 ✔️ Implemented advanced **preprocessing** pipeline for feature enhancement  
 ✔️ Used **WGAN-GP** for data augmentation to overcome dataset imbalance  
-✔️ Applied **transfer learning** with modern CNN architectures  
+✔️ Compared **six** ImageNet-pretrained CNNs with transfer learning  
 ✔️ Achieved **92.2% accuracy** using DenseNet-121  
 ✔️ Deployed prototype on Android for IoMT-based lesion classification  
 ✔️ Proposed a **low-cost, offline diagnostic solution** for remote healthcare
@@ -129,7 +155,18 @@ We designed a lightweight **Android application** for edge-based inference, enab
 
 ## 💻 Code in this repository
 
-This is the WGAN-GP code used for the paper's synthetic-data stage. The training procedure is as it was in 2021; the scripts now take command-line arguments and run on current PyTorch.
+This is the WGAN-GP code used for the paper's synthetic-data stage. It originates from co-author
+Praneeth Nemani's repository, [praneeth200219/SkinAid](https://github.com/praneeth200219/SkinAid).
+The training procedure is as it was in 2021; the scripts now take command-line arguments and run on
+current PyTorch.
+
+Two things worth knowing when comparing the code with the paper:
+
+- The paper describes 224 × 224 × 3 images throughout; the generator here is built for 64 × 64 or
+  128 × 128 output and the training script uses 128 × 128.
+- The paper's equation 4 adds part of the generated images to the *test* set as well as the training
+  set, so the reported accuracies are measured partly on synthetic images. The follow-up below
+  re-evaluates the question on real, lesion-level held-out data only.
 
 | File | Purpose |
 |---|---|
@@ -176,8 +213,16 @@ If you find this repository useful or reference this work in your research, plea
 ```bibtex
 @inproceedings{medi2021skinaid,
   title={SkinAid: A GAN-based Automatic Skin Lesion Monitoring Method for IoMT Frameworks},
-  author={Medi, Prathistith Raj and Nemani, Praneeth and Reddy, Pitta Vivek and Udutalapally, Venkanna and Das, Debanjan and Mohanty, Saraju P.},
+  author={Medi, Prathistith Raj and Nemani, Praneeth and Pitta, Vivek Reddy and Udutalapally, Venkanna and Das, Debanjan and Mohanty, Saraju P.},
   booktitle={2021 19th OITS International Conference on Information Technology (OCIT)},
   year={2021},
-  organization={IEEE}
+  organization={IEEE},
+  doi={10.1109/OCIT53463.2021.00048}
 }
+
+---
+
+## 📄 Licence
+
+No open-source licence has been chosen for this code; it is shared by the paper's authors for
+reading and reproduction. For other uses, please contact the authors.
