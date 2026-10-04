@@ -155,8 +155,7 @@ We designed a lightweight **Android application** for edge-based inference, enab
 
 ## 💻 Code in this repository
 
-This is the WGAN-GP code used for the paper's synthetic-data stage. It originates from co-author
-Praneeth Nemani's repository, [praneeth200219/SkinAid](https://github.com/praneeth200219/SkinAid).
+This is the WGAN-GP code used for the paper's synthetic-data stage.
 The training procedure is as it was in 2021; the scripts now take command-line arguments and run on
 current PyTorch.
 
@@ -224,5 +223,5 @@ If you find this repository useful or reference this work in your research, plea
 
 ## 📄 Licence
 
-No open-source licence has been chosen for this code; it is shared by the paper's authors for
-reading and reproduction. For other uses, please contact the authors.
+All rights reserved. The code is shared for reading and reproducing the paper's results; for
+any other use, please get in touch.
